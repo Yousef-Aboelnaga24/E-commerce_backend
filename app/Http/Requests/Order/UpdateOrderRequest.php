@@ -23,9 +23,11 @@ class UpdateOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'sometimes|exists:users,id',
-            'total_price' => 'sometimes|numeric',
-            'status' => 'sometimes|in:pending,processing,completed,cancelled'
+            'status' => 'sometimes|in:pending,processing,completed,cancelled',
+            'items' => 'sometimes|array',
+            'items.*.product_id' => 'required_with:items|exists:products,id',
+            'items.*.quantity' => 'required_with:items|integer|min:1',
+            'items.*.price' => 'required_with:items|numeric|min:0',
         ];
     }
 }

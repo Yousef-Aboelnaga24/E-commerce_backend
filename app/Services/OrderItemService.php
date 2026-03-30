@@ -8,18 +8,17 @@ class OrderItemService
 {
     public function getAll()
     {
-        return OrderItem::all();
+        return OrderItem::with('product', 'order')->get();
     }
 
-    public function create(array $data)
-    {
+    public function create(array $data) {
         return OrderItem::create($data);
     }
 
     public function update(OrderItem $orderItem, array $data)
     {
         $orderItem->update($data);
-        return $orderItem;
+        return $orderItem->load('product');
     }
 
     public function delete(OrderItem $orderItem)

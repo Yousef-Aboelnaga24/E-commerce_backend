@@ -10,7 +10,7 @@ class ProductService
     // Display Products
     public function getAll()
     {
-        return Product::with('category')->latest()->paginate(10);
+        return Product::with('category')->get();
     }
 
     // Create Product

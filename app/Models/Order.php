@@ -16,12 +16,17 @@ class Order extends Model
         'status'
     ];
 
+    protected $casts = [
+        'total_price' => 'decimal:2',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function orderItems(){
+    public function items()
+    {
         return $this->hasMany(OrderItem::class);
     }
 }

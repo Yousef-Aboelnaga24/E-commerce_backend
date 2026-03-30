@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 // Request
 use App\Http\Requests\Order\StoreOrderRequest;
 use App\Http\Requests\Order\UpdateOrderRequest;
@@ -53,11 +54,22 @@ class OrderController extends Controller
      */
     public function update(UpdateOrderRequest $request, Order $order)
     {
-       $data = $request->validated();
+        $data = $request->validated();
+        return DB::transaction(function () use ($order, $data) {
+            $order->update([
+                'status' => $data['status'] ?? $order->status,
+                'total_price' => $data['total_price'] ?? $order->total_price,
+            ]);
 
-       $updateOrder = $this->orderService->update($order,$data);
+            if (isset($data['items'])) {
+                $order->items()->delete();
+                $order->items()->createMany($data['items']);
+                $total = collect($data['items'])->sum(fn($item) => $item['price'] * $item['quantity']);
+                $order->update(['total_price' => $total]);
+            }
 
-       return new OrderResource($updateOrder);
+            return $order->load('items.product');
+        });
     }
 
     /**

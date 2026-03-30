@@ -11,7 +11,6 @@ use App\Http\Requests\Product\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 // Service
 use App\Services\ProductService;
-use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
