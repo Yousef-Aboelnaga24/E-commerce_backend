@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 
 class ProductService
 {
@@ -16,7 +17,7 @@ class ProductService
     // Create Product
     public function create(array $data)
     {
-        if (isset($data['image'])) {
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
             $data['image'] = $data['image']->store('products', 'public');
         }
 
@@ -26,7 +27,7 @@ class ProductService
     // Update Product
     public function update(Product $product, array $data)
     {
-        if (isset($data['image'])) {
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
 
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);

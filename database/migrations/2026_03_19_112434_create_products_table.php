@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->string('image');
             $table->integer('stock')->default(0);
+            $table->decimal('rating', 3, 2)->default(0);
             $table->timestamps();
         });
     }

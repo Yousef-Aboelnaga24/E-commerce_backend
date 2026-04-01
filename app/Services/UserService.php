@@ -8,7 +8,7 @@ class UserService
 {
     public function getAll()
     {
-        return User::all();
+        User::withSum('orders', 'total')->get();
     }
 
     public function create(array $data)

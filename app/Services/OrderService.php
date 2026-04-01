@@ -6,62 +6,106 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class OrderService
 {
     public function getAll()
     {
-        return Order::with('items')->latest()->paginate(5);
+        return Order::with('items.product')->latest()->paginate(5);
     }
-
 
     public function create(array $data)
     {
+        if (!Auth::check()) {
+            throw new Exception('User must be logged in to create an order.');
+        }
+
         return DB::transaction(function () use ($data) {
+            try {
+                $total = 0;
+                $items = [];
 
-            $total = 0;
-            $items = [];
+                foreach ($data['items'] as $item) {
+                    $product = Product::findOrFail($item['product_id']);
 
-            foreach ($data['items'] as $item) {
-                $product = Product::findOrFail($item['product_id']);
+                    $items[] = [
+                        'product_id' => $product->id,
+                        'quantity'   => $item['quantity'],
+                        'price'      => $product->price,
+                    ];
 
-                $items[] = [
-                    'product_id' => $product->id,
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
-                ];
+                    $total += $product->price * $item['quantity'];
+                }
 
-                $total += $product->price * $item['quantity'];
+                $order = Order::create([
+                    'user_id'     => Auth::id(),
+                    'total_price' => $total,
+                    'status'      => $data['status'] ?? 'pending',
+                ]);
+
+                if (!empty($items)) {
+                    $order->items()->createMany($items);
+                }
+
+                return $order->load('items.product');
+
+            } catch (Exception $e) {
+                Log::error('Order creation failed: ' . $e->getMessage(), ['data' => $data]);
+                throw $e;
             }
-
-            $order = Order::create([
-                'user_id' => Auth::id(),
-                'total_price' => $total,
-                'status' => 'pending'
-            ]);
-
-            $order->items()->createMany($items);
-
-            return $order->load('items.product');
         });
     }
 
     public function update(Order $order, array $data)
     {
         return DB::transaction(function () use ($order, $data) {
-            if (isset($data['items'])) {
-                $order->items()->delete();
-                $order->items()->createMany($data['items']);
-                $data['total_price'] = collect($data['items'])->sum(fn($item) => $item['price'] * $item['quantity']);
-            }
+            try {
+                if (isset($data['items']) && is_array($data['items'])) {
+                    $order->items()->delete();
 
-            $order->update($data);
-            return $order->load('items.product');
+                    $items = [];
+                    $total = 0;
+
+                    foreach ($data['items'] as $item) {
+                        $product = Product::findOrFail($item['product_id']);
+                        $items[] = [
+                            'product_id' => $product->id,
+                            'quantity'   => $item['quantity'],
+                            'price'      => $product->price,
+                        ];
+                        $total += $product->price * $item['quantity'];
+                    }
+
+                    if (!empty($items)) {
+                        $order->items()->createMany($items);
+                    }
+
+                    $data['total_price'] = $total;
+                }
+
+                $order->update($data);
+
+                return $order->load('items.product');
+
+            } catch (Exception $e) {
+                Log::error('Order update failed: ' . $e->getMessage(), ['order_id' => $order->id, 'data' => $data]);
+                throw $e;
+            }
         });
     }
 
     public function delete(Order $order)
     {
-        return $order->delete();
+        return DB::transaction(function () use ($order) {
+            try {
+                $order->items()->delete();
+                return $order->delete();
+            } catch (Exception $e) {
+                Log::error('Order deletion failed: ' . $e->getMessage(), ['order_id' => $order->id]);
+                throw $e;
+            }
+        });
     }
 }

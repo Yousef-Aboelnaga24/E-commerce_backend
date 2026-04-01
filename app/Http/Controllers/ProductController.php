@@ -11,6 +11,7 @@ use App\Http\Requests\Product\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 // Service
 use App\Services\ProductService;
+use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
@@ -24,10 +25,17 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $products = $this->productService->getAll();
+            $query = Product::query();
+
+            if ($request->category_id) {
+                $query->where('category_id', $request->category_id);
+            }
+
+            $products = $query->get();
+
             return ProductResource::collection($products);
         } catch (\Exception $e) {
             return response()->json([
@@ -44,7 +52,7 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request)
     {
         try {
-            $data = $request->validated();
+            $data = $request->except('image');
 
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image');
@@ -86,7 +94,7 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request, Product $product)
     {
         try {
-            $data = $request->validated();
+            $data = $request->except('image');
 
             if ($request->hasFile('image')) {
                 $data['image'] = $request->file('image');
