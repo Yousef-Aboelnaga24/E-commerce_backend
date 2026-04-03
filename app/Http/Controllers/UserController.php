@@ -10,7 +10,6 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\UserService;
-use Illuminate\Http\JsonResponse;
 use Exception;
 
 class UserController extends Controller
@@ -25,7 +24,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index()
     {
         try {
             $users = $this->userService->getAll();
@@ -42,7 +41,7 @@ class UserController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreUserRequest $request): JsonResponse
+    public function store(StoreUserRequest $request)
     {
         try {
             $data = $request->validated();
@@ -66,7 +65,7 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(User $user): JsonResponse
+    public function show(User $user)
     {
         try {
             return response()->json(new UserResource($user), 200);
@@ -82,7 +81,7 @@ class UserController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user)
     {
         try {
             $data = $request->validated();
@@ -101,7 +100,7 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user): JsonResponse
+    public function destroy(User $user)
     {
         try {
             $this->userService->delete($user);

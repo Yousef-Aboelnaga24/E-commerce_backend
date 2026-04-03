@@ -4,6 +4,7 @@ namespace App\Http\Requests\User;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -25,7 +26,7 @@ class StoreUserRequest extends FormRequest
         $userId = $this->route('user') ? $this->route('user')->id : null;
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email' . $userId,
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($userId)],
             'phone' => 'sometimes|string|max:11',
             'password' => 'required|string|min:8',
             'role' => 'required|in:admin,user'
