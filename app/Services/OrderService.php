@@ -19,42 +19,51 @@ class OrderService
     public function create(array $data)
     {
         if (!Auth::check()) {
-            throw new Exception('User must be logged in to create an order.');
+            throw new Exception('User must be logged in.');
         }
 
         return DB::transaction(function () use ($data) {
-            try {
-                $total = 0;
-                $items = [];
 
-                foreach ($data['items'] as $item) {
-                    $product = Product::findOrFail($item['product_id']);
+            $total = 0;
+            $items = [];
 
-                    $items[] = [
-                        'product_id' => $product->id,
-                        'quantity'   => $item['quantity'],
-                        'price'      => $product->price,
-                    ];
+            $products = Product::whereIn('id', collect($data['items'])->pluck('product_id'))
+                ->get()
+                ->keyBy('id');
 
-                    $total += $product->price * $item['quantity'];
+            foreach ($data['items'] as $item) {
+
+                $product = $products[$item['product_id']] ?? null;
+
+                if (!$product) {
+                    throw new Exception('Product not found');
                 }
 
-                $order = Order::create([
-                    'user_id'     => Auth::id(),
-                    'total_price' => $total,
-                    'status'      => $data['status'] ?? 'pending',
-                ]);
-
-                if (!empty($items)) {
-                    $order->items()->createMany($items);
+                if ($product->stock < $item['quantity']) {
+                    throw new Exception("{$product->name} out of stock");
                 }
 
-                return $order->load('items.product');
+                $items[] = [
+                    'product_id' => $product->id,
+                    'quantity'   => $item['quantity'],
+                    'price'      => $product->price,
+                ];
 
-            } catch (Exception $e) {
-                Log::error('Order creation failed: ' . $e->getMessage(), ['data' => $data]);
-                throw $e;
+                $total += $product->price * $item['quantity'];
+
+                // تقليل المخزون
+                $product->decrement('stock', $item['quantity']);
             }
+
+            $order = Order::create([
+                'user_id'     => Auth::id(),
+                'total_price' => $total,
+                'status'      => $data['status'],
+            ]);
+
+            $order->items()->createMany($items);
+
+            return $order->load('items.product');
         });
     }
 
@@ -88,7 +97,6 @@ class OrderService
                 $order->update($data);
 
                 return $order->load('items.product');
-
             } catch (Exception $e) {
                 Log::error('Order update failed: ' . $e->getMessage(), ['order_id' => $order->id, 'data' => $data]);
                 throw $e;

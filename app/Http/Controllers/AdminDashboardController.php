@@ -11,7 +11,6 @@ class AdminDashboardController extends Controller
 {
     public function status()
     {
-        // 📊 Total Revenue
         $totalRevenue = Order::sum('total_price');
 
         $activeUsers = User::where('role', 'user')->count();

@@ -16,65 +16,35 @@ use App\Services\OrderService;
 class OrderController extends Controller
 {
     protected $orderService;
+
     public function __construct(OrderService $orderService)
     {
         $this->orderService = $orderService;
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
         $orders = $this->orderService->getAll();
-
         return OrderResource::collection($orders);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreOrderRequest $request)
     {
-        $data = $request->validated();
-
-        $order = $this->orderService->create($data);
+        $order = $this->orderService->create($request->validated());
         return new OrderResource($order);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Order $order)
     {
+        return new OrderResource($order->load('items.product'));
+    }
+
+    public function update(UpdateOrderRequest $request, Order $order)
+    {
+        $order = $this->orderService->update($order, $request->validated());
         return new OrderResource($order);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateOrderRequest $request, Order $order)
-    {
-        $data = $request->validated();
-        return DB::transaction(function () use ($order, $data) {
-            $order->update([
-                'status' => $data['status'] ?? $order->status,
-                'total_price' => $data['total_price'] ?? $order->total_price,
-            ]);
-
-            if (isset($data['items'])) {
-                $order->items()->delete();
-                $order->items()->createMany($data['items']);
-                $total = collect($data['items'])->sum(fn($item) => $item['price'] * $item['quantity']);
-                $order->update(['total_price' => $total]);
-            }
-
-            return $order->load('items.product');
-        });
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Order $order)
     {
         $this->orderService->delete($order);

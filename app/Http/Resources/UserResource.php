@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'email_verified' => $this->email_verified_at ? true : false,
             'total_spent' => $this->total_spent ?? 0,
+            'created_at' => $this->created_at
         ];
     }
 }
