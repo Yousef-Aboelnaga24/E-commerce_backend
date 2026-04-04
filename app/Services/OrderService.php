@@ -46,19 +46,17 @@ class OrderService
                 $items[] = [
                     'product_id' => $product->id,
                     'quantity'   => $item['quantity'],
-                    'price'      => $product->price,
                 ];
 
                 $total += $product->price * $item['quantity'];
 
-                // تقليل المخزون
                 $product->decrement('stock', $item['quantity']);
             }
 
             $order = Order::create([
                 'user_id'     => Auth::id(),
                 'total_price' => $total,
-                'status'      => $data['status'],
+                'status'      => $data['status']??'pending',
             ]);
 
             $order->items()->createMany($items);
@@ -82,7 +80,6 @@ class OrderService
                         $items[] = [
                             'product_id' => $product->id,
                             'quantity'   => $item['quantity'],
-                            'price'      => $product->price,
                         ];
                         $total += $product->price * $item['quantity'];
                     }

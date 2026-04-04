@@ -32,6 +32,11 @@ class OrderController extends Controller
     {
         $order = $this->orderService->create($request->validated());
         return new OrderResource($order);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
     }
 
     public function show(Order $order)

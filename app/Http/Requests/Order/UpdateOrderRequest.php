@@ -27,7 +27,6 @@ class UpdateOrderRequest extends FormRequest
             'items' => 'sometimes|array',
             'items.*.product_id' => 'required_with:items|exists:products,id',
             'items.*.quantity' => 'required_with:items|integer|min:1',
-            'items.*.price' => 'required_with:items|numeric|min:0',
         ];
     }
 }
